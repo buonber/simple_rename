@@ -86,7 +86,7 @@ def _arc_pts(cx, cy, r, start_deg, end_deg, steps):
 class BatchRenameApp:
     def __init__(self, root):
         self.root = root
-        self.root.title("Simple Rename v1.0")
+        self.root.title("Simple Rename v1.1")
         self.root.geometry("440x300")
         self.root.resizable(False, False)
         self.root.configure(bg=BG)
@@ -268,7 +268,36 @@ class BatchRenameApp:
             self.drop_canvas.bind("<Button-1>", lambda e: self.select_files())
 
         # ── Rename Options ────────────────────────────────────────────────
-        self._section(self.root, "Rename Options", row=2)
+        # Build header manually (inline with case checkboxes)
+        hdr = tk.Frame(self.root, bg=BG)
+        hdr.grid(row=2, column=0, sticky="ew", padx=10, pady=(8, 2))
+        tk.Label(hdr, text="●", fg=NEON_BLUE, bg=BG,
+                 font=("Consolas", 8, "bold")).pack(side="left", padx=(0, 5))
+        tk.Label(hdr, text="Rename Options", fg=NEON_BLUE, bg=BG,
+                 font=("Consolas", 9, "bold")).pack(side="left")
+
+        # Case checkboxes — right side of header
+        self.case_var = tk.StringVar(value="")
+        self._prev_case = ""  # track previous value for mutual-exclusive toggle
+
+        def _toggle_case(val):
+            # Tkinter already set case_var to val before command fires.
+            # If the user clicked the already-active option, deselect it.
+            if self._prev_case == val:
+                self.case_var.set("")
+                self._prev_case = ""
+            else:
+                self.case_var.set(val)
+                self._prev_case = val
+
+        ttk.Checkbutton(
+            hdr, text="lowercase",
+            variable=self.case_var, onvalue="lower", offvalue="",
+            command=lambda: _toggle_case("lower")).pack(side="right", padx=(4, 0))
+        ttk.Checkbutton(
+            hdr, text="UPPERCASE",
+            variable=self.case_var, onvalue="upper", offvalue="",
+            command=lambda: _toggle_case("upper")).pack(side="right", padx=(8, 0))
 
         opt = tk.Frame(self.root, bg=BG)
         opt.grid(row=3, column=0, sticky="ew", padx=10, pady=(0, 2))
@@ -583,7 +612,16 @@ class BatchRenameApp:
                 name = f"{num}_{name}" if self.number_position.get() == "Start" \
                        else f"{name}_{num}"
             except ValueError: pass
-        return f"{self.prefix_entry.get()}{name}{self.suffix_entry.get()}{ext}"
+        # Apply case transform to full name including prefix/suffix/ext
+        case = self.case_var.get()
+        full = f"{self.prefix_entry.get()}{name}{self.suffix_entry.get()}"
+        if case == "upper":
+            full = full.upper()
+            return f"{full}{ext.upper()}"
+        elif case == "lower":
+            full = full.lower()
+            return f"{full}{ext.lower()}"
+        return f"{full}{ext}"
 
     def execute_rename(self):
         if not self.files:
@@ -676,7 +714,9 @@ class BatchRenameApp:
         for fp, fn, nn in pairs:
             np_ = os.path.join(os.path.dirname(fp), nn)
             try:
-                if os.path.exists(np_) and fp != np_:
+                # Treat as "same path" if only case changed (Windows is case-insensitive)
+                same_path = os.path.normcase(fp) == os.path.normcase(np_)
+                if os.path.exists(np_) and not same_path:
                     errors.append(f"{fn} → already exists"); err += 1
                 else:
                     os.rename(fp, np_); ok += 1
@@ -696,6 +736,8 @@ class BatchRenameApp:
         self.custom_name_entry.config(state="normal")
         self.custom_name_entry.delete(0, tk.END)
         self.number_var.set(False)
+        self.case_var.set("")
+        self._prev_case = ""
         self.start_number.set("1")
         self.padding_number.set("3")
         self.number_position.set("End")
