@@ -1,4 +1,5 @@
-<img width="439" height="296" alt="screenshot_app" src="https://github.com/user-attachments/assets/51e94657-e165-4ea2-869d-6edf748d35d9" />
+<img width="438" height="295" alt="screenshot_app" src="https://github.com/user-attachments/assets/67ba8987-c537-4a81-b90e-61ed2a358ed7" />
+
 <h1>Simple Rename v1.0</h1>
 <p>Simple Rename is a lightweight and efficient desktop tool designed to help you batch rename files quickly and easily.</p>
 
