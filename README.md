@@ -1,40 +1,45 @@
-<img width="438" height="341" alt="image" src="https://github.com/user-attachments/assets/bad732d5-80fc-4866-afda-dfd28f1b4a55" />
+<img width="465" height="346" alt="image" src="https://github.com/user-attachments/assets/89b5a17d-bbf9-44c2-a1ad-cb3826accf61" />
 
-<h1>Simple Rename v1.5</h1>
-<p>A modern, lightweight batch file renaming tool featuring a neon-inspired dark UI.</p>
+# Simple Rename v1.6 <img src="https://img.shields.io/badge/status-Latest-success" alt="Latest Release">
 
-<div style="background: #1a1d24; padding: 15px; border-left: 4px solid #f9e2af; border-radius: 4px;">
-    <strong>Note:</strong> This is a <strong>portable application</strong>—no installation required. Simply run the executable to start renaming your files immediately.
-</div>
+A free, portable batch file renaming tool featuring a neon-inspired dark UI.
 
-<h2>Changelog v1.5</h2>
-<ul>
-    <li><strong>New Features:</strong>
-        <ul>
-            <li>Dynamic Timestamp: Auto-append file modification dates (e.g., YYMMDD) to prefixes or suffixes.</li>
-            <li>Custom Separators: Added flexible options (underscore, dot, or none) for filename formatting.</li>
-        </ul>
-    </li>
-    <li><strong>UI Optimizations:</strong>
-        <ul>
-            <li>Refined Layout: Optimized element padding, spacing, and component sizing for a more compact and organized interface.</li>
-            <li>Icon-based UI: Replaced text labels with intuitive, professional icons for a cleaner look.</li>
-            <li>Drag & Drop: Streamlined file import process.</li>
-        </ul>
-    </li>
-    <li><strong>Bug Fixes & Stability:</strong>
-        <ul>
-            <li>State Management: Fixed reset_fields to ensure all UI states clear correctly.</li>
-            <li>UI Clean-up: Resolved Combobox focus issues (removed unwanted text highlighting artifacts).</li>
-            <li>Stability: Optimized internal event handling for smoother performance.</li>
-        </ul>
-    </li>
-</ul>
+> [!NOTE]
+> This is a **portable application**—no installation required. Simply run the executable to start renaming your files immediately.
 
-<h2>Features</h2>
-<ul>
-    <li>Batch Renaming (Find & Replace)</li>
-    <li>Sequential Numbering (Start, Padding, Positioning)</li>
-    <li>Case Transformation (UPPERCASE/lowercase)</li>
-    <li>Real-time Preview before renaming</li>
-</ul>
+---
+
+## Changelog v1.6
+*feat: center window, smooth fade-in, fix uppercase ext, and add trim options*
+
+* **Add window centering logic** and a seamless 1s opacity fade-in animation on launch.
+* **Maintain lowercase/original file extensions** when applying UPPERCASE transformation.
+* **Implement "Del L" and "Del R" spinboxes** to trim $N$ characters from filenames.
+* **Adjust Custom Name positioning** and include dash (`-`) as a valid separator option.
+
+---
+
+## Changelog v1.5
+
+### 🚀 New Features
+* **Dynamic Timestamp:** Auto-append file modification dates (e.g., `YYMMDD`) to prefixes or suffixes.
+* **Custom Separators:** Added flexible options (underscore, dot, or none) for filename formatting.
+
+### 🎨 UI Optimizations
+* **Refined Layout:** Optimized element padding, spacing, and component sizing for a more compact and organized interface.
+* **Icon-based UI:** Replaced text labels with intuitive, professional icons for a cleaner look.
+* **Drag & Drop:** Streamlined file import process.
+
+### 🐛 Bug Fixes & Stability
+* **State Management:** Fixed `reset_fields` to ensure all UI states clear correctly.
+* **UI Clean-up:** Resolved Combobox focus issues (removed unwanted text highlighting artifacts).
+* **Stability:** Optimized internal event handling for smoother performance.
+
+---
+
+## Features
+
+* **Batch Renaming** (Find & Replace)
+* **Sequential Numbering** (Start, Padding, Positioning)
+* **Case Transformation** (UPPERCASE/lowercase)
+* **Real-time Preview** before renaming
