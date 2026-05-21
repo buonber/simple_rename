@@ -1,3 +1,5 @@
+<img width="465" height="346" alt="image" src="https://github.com/user-attachments/assets/89b5a17d-bbf9-44c2-a1ad-cb3826accf61" />
+
 # Simple Rename v1.6 <img src="https://img.shields.io/badge/status-Latest-success" alt="Latest Release">
 
 A free, portable batch file renaming tool featuring a neon-inspired dark UI.
