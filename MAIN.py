@@ -31,6 +31,7 @@ def _parse_dnd_paths(raw):
 BG        = "#111318"
 SURFACE   = "#1a1d24"
 SURFACE2  = "#22262f"
+INPUT_BG  = "#111317"
 BORDER    = "#2e3340"
 FG        = "#cdd6f4"
 FG_DIM    = "#6c7086"
@@ -39,6 +40,79 @@ NEON_CYAN = "#89dceb"
 NEON_GRN  = "#a6e3a1"
 NEON_PURP = "#cba6f7"
 NEON_RED  = "#f38ba8"
+
+# ── ToolTip Class ─────────────────────────────────────────────────────────────
+class ToolTip:
+    def __init__(self, widget, text):
+        self.widget = widget
+        self.text = text
+        self.tipwindow = None
+        self.id = None
+        self.fade_id = None
+        self.wait_id = None
+        self.show_count = 0
+        self.widget.bind("<Enter>", self.enter, add="+")
+        self.widget.bind("<Leave>", self.leave, add="+")
+
+    def enter(self, event=None):
+        if self.show_count < 3:
+            self.schedule()
+
+    def leave(self, event=None):
+        self.unschedule()
+        self.hidetip()
+
+    def schedule(self):
+        self.unschedule()
+        self.id = self.widget.after(500, self.showtip)
+
+    def unschedule(self):
+        if self.id:
+            self.widget.after_cancel(self.id)
+            self.id = None
+        if self.wait_id:
+            self.widget.after_cancel(self.wait_id)
+            self.wait_id = None
+        if self.fade_id:
+            self.widget.after_cancel(self.fade_id)
+            self.fade_id = None
+
+    def showtip(self, event=None):
+        self.show_count += 1 
+        
+        x, y, cx, cy = self.widget.bbox("insert") or (0, 0, 0, 0)
+        x += self.widget.winfo_rootx() + 25
+        y += self.widget.winfo_rooty() + 20
+        self.tipwindow = tw = tk.Toplevel(self.widget)
+        tw.wm_overrideredirect(True)
+        tw.wm_geometry(f"+{x}+{y}")
+        
+        tw.attributes("-alpha", 1.0)
+        
+        label = tk.Label(tw, text=self.text, justify=tk.LEFT,
+                         background="#22262f", foreground="#cdd6f4",
+                         relief=tk.SOLID, borderwidth=1,
+                         font=("Consolas", 8))
+        label.pack(ipadx=4, ipady=2)
+        
+        self.wait_id = self.widget.after(1000, self.start_fade)
+
+    def start_fade(self, alpha=1.0):
+        if not self.tipwindow:
+            return
+            
+        alpha -= 0.08
+        if alpha > 0:
+            self.tipwindow.attributes("-alpha", alpha)
+            self.fade_id = self.widget.after(40, lambda: self.start_fade(alpha))
+        else:
+            self.hidetip()
+
+    def hidetip(self):
+        tw = self.tipwindow
+        self.tipwindow = None
+        if tw:
+            tw.destroy()
 
 # ── Icon painter ──────────────────────────────────────────────────────────────
 def draw_icon(canvas, kind, color, bg):
@@ -86,38 +160,82 @@ def _arc_pts(cx, cy, r, start_deg, end_deg, steps):
 class BatchRenameApp:
     def __init__(self, root):
         self.root = root
-        self.root.title("Simple Rename v1.1")
-        self.root.geometry("440x300")
+        self.root.title("Simple Rename v1.6")
+        
+        # Set window dimensions
+        window_width = 470
+        window_height = 350
+        
+        # Calculate center coordinates
+        screen_width = self.root.winfo_screenwidth()
+        screen_height = self.root.winfo_screenheight()
+        x = (screen_width // 2) - (window_width // 2)
+        y = (screen_height // 2) - (window_height // 2)
+        
+        # Set geometry to the center of the screen
+        self.root.geometry(f"{window_width}x{window_height}+{x}+{y}")
         self.root.resizable(False, False)
         self.root.configure(bg=BG)
+        
+        # Make transparent immediately to hide UI rendering
+        self.root.attributes("-alpha", 0.0)
+        
         self.files = []
         self.setup_styles()
         self.create_widgets()
+        
+        # Force Tkinter to calculate all widget sizes/positions now
+        self.root.update_idletasks()
+        
+        # Delay fade-in slightly to ensure window is fully mapped by OS
+        self.root.after(50, self.start_fade_in)
+
+    def start_fade_in(self, alpha=0.0):
+        alpha += 0.05  # Increase opacity
+        if alpha <= 1.0:
+            self.root.attributes("-alpha", alpha)
+            # Re-call every 30ms for a smooth ~600ms fade
+            self.root.after(30, lambda: self.start_fade_in(alpha))
+        else:
+            self.root.attributes("-alpha", 1.0) # Ensure full opacity
 
     # ── Styles ────────────────────────────────────────────────────────────────
     def setup_styles(self):
         s = ttk.Style()
         s.theme_use('clam')
-        base = dict(background=BG, foreground=FG, fieldbackground=SURFACE2,
+        base = dict(background=BG, foreground=FG, fieldbackground=INPUT_BG,
                     bordercolor=BORDER, darkcolor=SURFACE, lightcolor=SURFACE,
                     troughcolor=SURFACE, font=("Consolas", 9))
         s.configure(".", **base)
         s.configure("TLabel",    background=BG, foreground=FG,    font=("Consolas", 9))
         s.configure("TFrame",    background=BG)
-        s.configure("TEntry",    fieldbackground=SURFACE2, foreground=FG,
+        
+        s.configure("TEntry",    fieldbackground=INPUT_BG, foreground=FG,
                     insertcolor=NEON_BLUE, bordercolor=BORDER, font=("Consolas", 9))
         s.map("TEntry", bordercolor=[("focus", NEON_BLUE)])
+        
         s.configure("TCheckbutton", background=BG, foreground=FG, font=("Consolas", 9),
                     indicatorcolor=SURFACE2, indicatorrelief="flat")
         s.map("TCheckbutton",
               indicatorcolor=[("selected", NEON_BLUE)],
               foreground=[("active", NEON_BLUE)])
-        s.configure("TCombobox", fieldbackground=SURFACE2, background=SURFACE2,
+              
+        s.configure("TRadiobutton", background=BG, foreground=FG, font=("Consolas", 9),
+                    indicatorcolor=SURFACE2, indicatorrelief="flat")
+        s.map("TRadiobutton",
+              indicatorcolor=[("selected", NEON_CYAN)],
+              foreground=[("active", NEON_CYAN)])
+              
+        s.configure("TCombobox", fieldbackground=INPUT_BG, background=SURFACE2,
                     foreground=FG, arrowcolor=NEON_BLUE,
                     selectbackground=NEON_BLUE, selectforeground=BG, font=("Consolas", 9))
-        s.configure("TSpinbox", fieldbackground=SURFACE2, background=SURFACE2,
+        s.map("TCombobox", fieldbackground=[("readonly", INPUT_BG)]) 
+        
+        s.configure("TSpinbox", fieldbackground=INPUT_BG, background=SURFACE2,
                     foreground=FG, arrowcolor=NEON_BLUE, insertcolor=NEON_BLUE,
                     font=("Consolas", 9))
+        s.map("TSpinbox", fieldbackground=[("readonly", INPUT_BG), ("disabled", SURFACE)])
+        
         s.configure("Treeview", background=SURFACE, foreground=FG,
                     fieldbackground=SURFACE, bordercolor=BORDER,
                     rowheight=20, font=("Consolas", 9))
@@ -144,13 +262,13 @@ class BatchRenameApp:
     def _icon_btn(self, parent, icon_kind, label, command,
                   fg=FG, bg=SURFACE2, bold=False, side="left", padx=(6,0)):
         frame = tk.Frame(parent, bg=bg, cursor="hand2")
-        frame.pack(side=side, padx=padx, pady=5)
+        frame.pack(side=side, padx=padx, pady=4)
         ic = tk.Canvas(frame, width=14, height=14, bg=bg, highlightthickness=0, cursor="hand2")
         ic.pack(side="left", padx=(6, 3))
         draw_icon(ic, icon_kind, fg, bg)
-        font_ = ("Consolas", 9, "bold") if bold else ("Consolas", 9)
+        font_ = ("Consolas", 11, "bold") if bold else ("Consolas", 11)
         lbl = tk.Label(frame, text=label, fg=fg, bg=bg, font=font_,
-                       padx=4, pady=0, cursor="hand2")
+                       padx=4, pady=2, cursor="hand2")
         lbl.pack(side="left", padx=(0, 6))
 
         hover_bg = NEON_BLUE
@@ -201,7 +319,7 @@ class BatchRenameApp:
         drop_wrap.grid_columnconfigure(0, weight=1)
 
         self.drop_canvas = tk.Canvas(
-            drop_wrap, height=44, bg=SURFACE2,
+            drop_wrap, height=65, bg=SURFACE2,
             highlightthickness=1, highlightbackground=BORDER, cursor="hand2")
         self.drop_canvas.grid(row=0, column=0, sticky="ew", pady=(0, 4))
         self.drop_canvas.bind("<Configure>", lambda e: self._draw_drop_zone(False))
@@ -213,7 +331,7 @@ class BatchRenameApp:
                                    fg=FG_DIM, bg=BG, font=("Consolas", 9))
         self.file_label.pack(side="left")
 
-        # Files list button (hidden until files added)
+        # Files list button
         self.files_btn_frame = tk.Frame(fc_row, bg=SURFACE2, cursor="hand2")
         self.files_btn_ic = tk.Canvas(self.files_btn_frame, width=14, height=14,
                                       bg=SURFACE2, highlightthickness=0, cursor="hand2")
@@ -268,7 +386,6 @@ class BatchRenameApp:
             self.drop_canvas.bind("<Button-1>", lambda e: self.select_files())
 
         # ── Rename Options ────────────────────────────────────────────────
-        # Build header manually (inline with case checkboxes)
         hdr = tk.Frame(self.root, bg=BG)
         hdr.grid(row=2, column=0, sticky="ew", padx=10, pady=(8, 2))
         tk.Label(hdr, text="●", fg=NEON_BLUE, bg=BG,
@@ -276,13 +393,10 @@ class BatchRenameApp:
         tk.Label(hdr, text="Rename Options", fg=NEON_BLUE, bg=BG,
                  font=("Consolas", 9, "bold")).pack(side="left")
 
-        # Case checkboxes — right side of header
         self.case_var = tk.StringVar(value="")
-        self._prev_case = ""  # track previous value for mutual-exclusive toggle
+        self._prev_case = ""
 
         def _toggle_case(val):
-            # Tkinter already set case_var to val before command fires.
-            # If the user clicked the already-active option, deselect it.
             if self._prev_case == val:
                 self.case_var.set("")
                 self._prev_case = ""
@@ -301,24 +415,99 @@ class BatchRenameApp:
 
         opt = tk.Frame(self.root, bg=BG)
         opt.grid(row=3, column=0, sticky="ew", padx=10, pady=(0, 2))
-        opt.grid_columnconfigure(1, weight=1)
-        opt.grid_columnconfigure(3, weight=1)
 
         def lbl(text, row, col):
             tk.Label(opt, text=text, fg=FG_DIM, bg=BG,
                      font=("Consolas", 9)).grid(row=row, column=col, sticky="w",
-                                                padx=(0,6), pady=1)
+                                                padx=(0,4), pady=1)
         def ent(row, col, cs=1):
             e = ttk.Entry(opt)
-            e.grid(row=row, column=col, columnspan=cs, sticky="ew", pady=1)
+            e.grid(row=row, column=col, columnspan=cs, sticky="ew", pady=3)
             return e
 
-        lbl("Prefix:", 0, 0); self.prefix_entry  = ent(0, 1, 3)
-        lbl("Suffix:", 1, 0); self.suffix_entry  = ent(1, 1, 3)
-        lbl("Find:",   2, 0); self.find_entry    = ent(2, 1)
+        DATE_FORMATS = ["none", "YYMMDD", "DDMMYY", "YYYYMM"]
+
+        def _make_date_btn(parent, entry_widget):
+            fmt_var = tk.StringVar(value="none")
+            entry_widget._date_var = fmt_var
+            entry_widget._use_mtime = None
+
+            fmt_cb = ttk.Combobox(parent, values=DATE_FORMATS,
+                                  textvariable=fmt_var, width=7, state="readonly",
+                                  font=("Consolas", 8))
+
+            def _on_select(*_):
+                fmt_cb.selection_clear()
+                val = fmt_var.get()
+                if val == "none":
+                    entry_widget._use_mtime = None
+                    if getattr(entry_widget, "_date_active", False):
+                        entry_widget.delete(0, tk.END)
+                        entry_widget._date_active = False
+                else:
+                    entry_widget._use_mtime = val
+                    entry_widget._date_active = True
+
+            fmt_cb.bind("<<ComboboxSelected>>", _on_select)
+            fmt_cb.bind("<FocusIn>", lambda e: fmt_cb.selection_clear())
+            
+            # Tooltip for Timestamp Combobox
+            ToolTip(fmt_cb, "Append creation/modified date")
+            return fmt_cb
+
+        # Prevent empty values
+        def _enforce_zero(var):
+            if not var.get().strip():
+                var.set("0")
+
+        self.del_left_var = tk.StringVar(value="0")
+        self.del_right_var = tk.StringVar(value="0")
+        vcmd_num_only = (self.root.register(lambda P: P.isdigit() or P == ""), '%P')
+
+        # Prefix row with Del L
+        prefix_row = tk.Frame(opt, bg=BG)
+        prefix_row.grid(row=0, column=0, columnspan=4, sticky="ew", pady=3)
+        prefix_row.grid_columnconfigure(1, weight=1) 
+        
+        tk.Label(prefix_row, text="Prefix:", fg=FG_DIM, bg=BG, font=("Consolas", 9)).grid(row=0, column=0, sticky="w", padx=(0,4))
+        self.prefix_entry = ttk.Entry(prefix_row)
+        self.prefix_entry.grid(row=0, column=1, sticky="ew")
+        
+        tk.Label(prefix_row, text="🕐", fg=FG_DIM, bg=BG, font=("Consolas", 9)).grid(row=0, column=2, padx=(6,2))
+        _make_date_btn(prefix_row, self.prefix_entry).grid(row=0, column=3, sticky="w")
+        
+        tk.Label(prefix_row, text=" Del L:", fg=FG_DIM, bg=BG, font=("Consolas", 9)).grid(row=0, column=4, padx=(4,2))
+        self.del_left_sp = ttk.Spinbox(prefix_row, from_=0, to=999, width=3, textvariable=self.del_left_var, validate='all', validatecommand=vcmd_num_only)
+        self.del_left_sp.grid(row=0, column=5, sticky="w")
+        
+        self.del_left_sp.bind("<FocusOut>", lambda e: _enforce_zero(self.del_left_var))
+        ToolTip(self.del_left_sp, "Remove N characters from the Left")
+
+        # Suffix row with Del R
+        suffix_row = tk.Frame(opt, bg=BG)
+        suffix_row.grid(row=1, column=0, columnspan=4, sticky="ew", pady=3)
+        suffix_row.grid_columnconfigure(1, weight=1)
+        
+        tk.Label(suffix_row, text="Suffix:", fg=FG_DIM, bg=BG, font=("Consolas", 9)).grid(row=0, column=0, sticky="w", padx=(0,4))
+        self.suffix_entry = ttk.Entry(suffix_row)
+        self.suffix_entry.grid(row=0, column=1, sticky="ew")
+        
+        tk.Label(suffix_row, text="🕐", fg=FG_DIM, bg=BG, font=("Consolas", 9)).grid(row=0, column=2, padx=(6,2))
+        _make_date_btn(suffix_row, self.suffix_entry).grid(row=0, column=3, sticky="w")
+        
+        tk.Label(suffix_row, text=" Del R:", fg=FG_DIM, bg=BG, font=("Consolas", 9)).grid(row=0, column=4, padx=(4,2))
+        self.del_right_sp = ttk.Spinbox(suffix_row, from_=0, to=999, width=3, textvariable=self.del_right_var, validate='all', validatecommand=vcmd_num_only)
+        self.del_right_sp.grid(row=0, column=5, sticky="w")
+
+        self.del_right_sp.bind("<FocusOut>", lambda e: _enforce_zero(self.del_right_var))
+        ToolTip(self.del_right_sp, "Remove N characters from the Right")
+
+        # Find & Replace
+        opt.grid_columnconfigure(1, weight=1)
+        opt.grid_columnconfigure(3, weight=1)
+        lbl("Find:",   2, 0); self.find_entry   = ent(2, 1)
         lbl("Replace:",2, 2); self.replace_entry = ent(2, 3)
 
-        # Validate Find input: show toast if text not found in any filename
         def _check_find(*args):
             ft = self.find_entry.get()
             if not ft:
@@ -331,7 +520,7 @@ class BatchRenameApp:
 
         # Numbering row
         num_row = tk.Frame(opt, bg=BG)
-        num_row.grid(row=3, column=0, columnspan=4, sticky="ew", pady=(3, 0))
+        num_row.grid(row=3, column=0, columnspan=4, sticky="ew", pady=(5, 0))
 
         self.number_var = tk.BooleanVar()
         ttk.Checkbutton(num_row, text="Numbering",
@@ -356,45 +545,51 @@ class BatchRenameApp:
         self.number_position.set("End"); self.number_position.pack(side="left")
         self.number_position.config(state="disabled")
 
-        # Bind clicks on disabled numbering widgets to show toast
         def _numbering_disabled_click(e):
             if not self.number_var.get():
                 self._show_toast("Numbering is disabled")
         for _w in (self.start_number, self.padding_number, self.number_position):
             _w.bind("<Button-1>", _numbering_disabled_click)
 
-        # Custom name row (for numbering)
+        # Custom name row
         custom_row = tk.Frame(opt, bg=BG)
-        custom_row.grid(row=4, column=0, columnspan=4, sticky="ew", pady=(2, 0))
+        custom_row.grid(row=4, column=0, columnspan=4, sticky="ew", pady=(4, 0))
         tk.Label(custom_row, text="Custom name:", fg=FG_DIM, bg=BG,
                  font=("Consolas", 9)).pack(side="left", padx=(0, 6))
         self.custom_name_entry = ttk.Entry(custom_row)
         self.custom_name_entry.pack(side="left", fill="x", expand=True)
         self.custom_name_entry.config(state="disabled")
+        self.custom_name_entry.bind("<Button-1>", _numbering_disabled_click)
+        tk.Label(custom_row, text="Sep:", fg=FG_DIM, bg=BG,
+                 font=("Consolas", 9)).pack(side="left", padx=(10, 4))
+        self.separator_var = tk.StringVar(value="_")
+        sep_frame = tk.Frame(custom_row, bg=BG)
+        sep_frame.pack(side="left")
+        for sep_val, sep_txt in [("_", "_ "), (".", ". "), ("-", "- "), ("", "none")]:
+            ttk.Radiobutton(sep_frame, text=sep_txt, variable=self.separator_var,
+                            value=sep_val).pack(side="left", padx=(0, 2))
 
 
         # ── Action bar ────────────────────────────────────────────────────
-        bar = tk.Frame(self.root, bg=SURFACE, height=36)
+        bar = tk.Frame(self.root, bg=SURFACE, height=43)
         bar.grid(row=4, column=0, sticky="ew", pady=(6, 0))
         bar.grid_propagate(False)
 
         self._icon_btn(bar, "reset", "Reset", self.reset_fields)
 
-        # Toast message label (center of action bar)
         self.toast_label = tk.Label(bar, text="", fg=NEON_RED, bg=SURFACE,
                                     font=("Consolas", 9), padx=4)
         self.toast_label.pack(side="left", padx=(8, 0))
         self._toast_job = None
 
-        # Rename button right-aligned
         rename_btn = tk.Frame(bar, bg=NEON_PURP, cursor="hand2")
-        rename_btn.pack(side="right", padx=(0, 8), pady=5)
+        rename_btn.pack(side="right", padx=(0, 8), pady=4)
         rename_ic = tk.Canvas(rename_btn, width=14, height=14, bg=NEON_PURP,
                               highlightthickness=0, cursor="hand2")
         rename_ic.pack(side="left", padx=(8, 3))
         draw_icon(rename_ic, "rename", BG, NEON_PURP)
         rename_lbl = tk.Label(rename_btn, text="Rename", fg=BG, bg=NEON_PURP,
-                              font=("Consolas", 9, "bold"), padx=4, pady=0, cursor="hand2")
+                              font=("Consolas", 11, "bold"), padx=4, pady=2, cursor="hand2")
         rename_lbl.pack(side="left", padx=(0, 8))
         def rn_enter(e):
             rename_btn.config(bg=NEON_BLUE); rename_ic.config(bg=NEON_BLUE)
@@ -412,7 +607,7 @@ class BatchRenameApp:
         c = self.drop_canvas
         c.delete("all")
         w = c.winfo_width() or 480
-        h = c.winfo_height() or 44
+        h = c.winfo_height() or 40
         bg = "#1e2d3d" if active else SURFACE2
         bd = NEON_CYAN if active else BORDER
         tx = NEON_CYAN if active else FG_DIM
@@ -454,7 +649,7 @@ class BatchRenameApp:
             self.files_btn_frame.pack_forget()
 
     def open_github(self):
-        import webbrowser; webbrowser.open("https://github.com/buonber")
+        import webbrowser; webbrowser.open("https://github.com/buonber/simple_rename")
 
     # ── Files manager dialog ──────────────────────────────────────────────────
     def open_files_manager(self):
@@ -473,7 +668,6 @@ class BatchRenameApp:
         tk.Label(dlg, text="● Manage Files", fg=NEON_BLUE, bg=BG,
                  font=("Consolas", 9, "bold")).pack(anchor="w", padx=12, pady=(10, 4))
 
-        # Listbox frame
         lf = tk.Frame(dlg, bg=SURFACE)
         lf.pack(fill="both", expand=True, padx=10, pady=(0, 6))
 
@@ -493,7 +687,24 @@ class BatchRenameApp:
 
         refresh_lb()
 
-        # Buttons row
+        def move_up():
+            sel = list(lb.curselection())
+            if not sel or sel[0] == 0: return
+            for i in sel:
+                if i == 0: continue
+                self.files[i-1], self.files[i] = self.files[i], self.files[i-1]
+            refresh_lb()
+            for i in sel: lb.selection_set(i - 1)
+
+        def move_down():
+            sel = list(lb.curselection())
+            if not sel or sel[-1] == len(self.files) - 1: return
+            for i in reversed(sel):
+                if i == len(self.files) - 1: continue
+                self.files[i], self.files[i+1] = self.files[i+1], self.files[i]
+            refresh_lb()
+            for i in sel: lb.selection_set(i + 1)
+
         btn_row = tk.Frame(dlg, bg=BG)
         btn_row.pack(fill="x", padx=10, pady=(0, 10))
 
@@ -515,7 +726,6 @@ class BatchRenameApp:
             refresh_lb()
             self._refresh_file_label()
 
-        # Add button
         add_btn = tk.Frame(btn_row, bg=SURFACE2, cursor="hand2")
         add_btn.pack(side="left", pady=2)
         add_ic = tk.Canvas(add_btn, width=14, height=14, bg=SURFACE2,
@@ -531,14 +741,13 @@ class BatchRenameApp:
             w.bind("<Button-1>", lambda e: add_files())
             w.bind("<Enter>", ae); w.bind("<Leave>", al)
 
-        # Remove button
         rem_btn = tk.Frame(btn_row, bg=SURFACE2, cursor="hand2")
         rem_btn.pack(side="left", padx=(8, 0), pady=2)
         rem_ic = tk.Canvas(rem_btn, width=14, height=14, bg=SURFACE2,
                            highlightthickness=0, cursor="hand2")
         rem_ic.pack(side="left", padx=(6, 3))
         draw_icon(rem_ic, "remove", NEON_RED, SURFACE2)
-        rem_lbl = tk.Label(rem_btn, text="Remove selected", fg=NEON_RED, bg=SURFACE2,
+        rem_lbl = tk.Label(rem_btn, text="Remove", fg=NEON_RED, bg=SURFACE2,
                            font=("Consolas", 9), padx=4, pady=4, cursor="hand2")
         rem_lbl.pack(side="left", padx=(0, 6))
         def re_(e): rem_btn.config(bg=NEON_RED); rem_ic.config(bg=NEON_RED); rem_lbl.config(bg=NEON_RED, fg=BG); draw_icon(rem_ic,"remove",BG,NEON_RED)
@@ -547,7 +756,21 @@ class BatchRenameApp:
             w.bind("<Button-1>", lambda e: remove_selected())
             w.bind("<Enter>", re_); w.bind("<Leave>", rl)
 
-        # Done button right-aligned
+        def _make_arrow_btn(parent, text, cmd, side_pad):
+            btn = tk.Frame(parent, bg=SURFACE2, cursor="hand2")
+            btn.pack(side="left", padx=side_pad, pady=2)
+            lbl_ = tk.Label(btn, text=text, fg=NEON_CYAN, bg=SURFACE2,
+                            font=("Consolas", 9, "bold"), padx=8, pady=4, cursor="hand2")
+            lbl_.pack()
+            def _e(e): btn.config(bg=NEON_CYAN); lbl_.config(bg=NEON_CYAN, fg=BG)
+            def _l(e): btn.config(bg=SURFACE2);  lbl_.config(bg=SURFACE2, fg=NEON_CYAN)
+            for w in (btn, lbl_):
+                w.bind("<Button-1>", lambda e, c=cmd: c())
+                w.bind("<Enter>", _e); w.bind("<Leave>", _l)
+
+        _make_arrow_btn(btn_row, "▲ Up",   move_up,   (8, 0))
+        _make_arrow_btn(btn_row, "▼ Down", move_down, (4, 0))
+
         done_btn = tk.Frame(btn_row, bg=NEON_BLUE, cursor="hand2")
         done_btn.pack(side="right", pady=2)
         done_lbl = tk.Label(done_btn, text="Done", fg=BG, bg=NEON_BLUE,
@@ -561,16 +784,13 @@ class BatchRenameApp:
 
     # ── Logic ─────────────────────────────────────────────────────────────────
     def _show_toast(self, msg, color=None):
-        """Show a message in the action bar that fades out after 1s."""
-        if color is None:
-            color = NEON_RED
+        if color is None: color = NEON_RED
         if self._toast_job is not None:
             self.root.after_cancel(self._toast_job)
             self._toast_job = None
         self.toast_label.config(text=msg, fg=color)
 
         def _fade(alpha=10):
-            # Simulate fade by stepping through dim colors (simple step fade)
             steps = [NEON_RED, "#d4738a", "#b05a6e", "#8c4255", "#6c3040",
                      "#4e2030", "#341220", "#1a0810", SURFACE]
             idx = 10 - alpha
@@ -597,35 +817,95 @@ class BatchRenameApp:
             self._refresh_file_label()
 
     def generate_new_name(self, filename, index):
+        import datetime
         name, ext = os.path.splitext(filename)
-        # Custom name overrides original (only when numbering enabled)
+        sep = self.separator_var.get()
+
+        # Enforce zero if empty just in case user clicks Rename without unfocusing
+        if not self.del_left_var.get().strip(): self.del_left_var.set("0")
+        if not self.del_right_var.get().strip(): self.del_right_var.set("0")
+
+        # Apply left/right trim to original filename
+        try: dl = int(self.del_left_var.get() or 0)
+        except ValueError: dl = 0
+        try: dr = int(self.del_right_var.get() or 0)
+        except ValueError: dr = 0
+
+        if dl > 0:
+            name = name[dl:]
+        if dr > 0 and name:
+            name = name[:-dr]
+
+        def _resolve_date(entry, is_prefix=True):
+            fmt = getattr(entry, "_use_mtime", None)
+            text = entry.get()
+            if not fmt: return text
+            
+            fp = self.files[index] if index < len(self.files) else None
+            if fp:
+                ts = os.path.getmtime(fp)
+                dt = datetime.datetime.fromtimestamp(ts)
+            else:
+                dt = datetime.datetime.now()
+                
+            if fmt == "YYMMDD":  d_str = dt.strftime("%y%m%d")
+            elif fmt == "DDMMYY":  d_str = dt.strftime("%d%m%y")
+            elif fmt == "YYYYMM":  d_str = dt.strftime("%Y%m")
+            else: d_str = dt.strftime("%y%m%d")
+            
+            if not text: return d_str
+            return f"{text}{sep}{d_str}" if is_prefix else f"{d_str}{sep}{text}"
+
         custom = self.custom_name_entry.get().strip() if self.number_var.get() else ""
         if custom:
             name = custom
         else:
             ft = self.find_entry.get()
             if ft: name = name.replace(ft, self.replace_entry.get())
+            
         if self.number_var.get():
             try:
                 num = str(int(self.start_number.get()) + index).zfill(
                           int(self.padding_number.get()))
-                name = f"{num}_{name}" if self.number_position.get() == "Start" \
-                       else f"{name}_{num}"
+                name = f"{num}{sep}{name}" if self.number_position.get() == "Start" \
+                       else f"{name}{sep}{num}"
             except ValueError: pass
-        # Apply case transform to full name including prefix/suffix/ext
+
+        prefix = _resolve_date(self.prefix_entry, True)
+        suffix = _resolve_date(self.suffix_entry, False)
+        
+        if prefix: prefix = prefix + sep
+        if suffix: suffix = sep + suffix
+        
         case = self.case_var.get()
-        full = f"{self.prefix_entry.get()}{name}{self.suffix_entry.get()}"
-        if case == "upper":
-            full = full.upper()
-            return f"{full}{ext.upper()}"
-        elif case == "lower":
-            full = full.lower()
-            return f"{full}{ext.lower()}"
+        full = f"{prefix}{name}{suffix}"
+        
+        # Apply case formatting
+        if case == "upper": 
+            return f"{full.upper()}{ext}" # Keep extension unchanged
+        elif case == "lower": 
+            return f"{full.lower()}{ext.lower()}"
+        
         return f"{full}{ext}"
 
     def execute_rename(self):
         if not self.files:
             messagebox.showwarning("Warning", "No files to rename!"); return
+
+        if not self.del_left_var.get().strip(): self.del_left_var.set("0")
+        if not self.del_right_var.get().strip(): self.del_right_var.set("0")
+
+        # Validate if trim length exceeds filename
+        try: dl = int(self.del_left_var.get() or 0)
+        except ValueError: dl = 0
+        try: dr = int(self.del_right_var.get() or 0)
+        except ValueError: dr = 0
+
+        for fp in self.files:
+            base_name = os.path.splitext(os.path.basename(fp))[0]
+            if (dl + dr) > len(base_name):
+                self._show_toast("Trim length exceeds filename")
+                return
 
         pairs = [(fp, os.path.basename(fp), self.generate_new_name(os.path.basename(fp), i))
                  for i, fp in enumerate(self.files)]
@@ -714,7 +994,6 @@ class BatchRenameApp:
         for fp, fn, nn in pairs:
             np_ = os.path.join(os.path.dirname(fp), nn)
             try:
-                # Treat as "same path" if only case changed (Windows is case-insensitive)
                 same_path = os.path.normcase(fp) == os.path.normcase(np_)
                 if os.path.exists(np_) and not same_path:
                     errors.append(f"{fn} → already exists"); err += 1
@@ -733,6 +1012,18 @@ class BatchRenameApp:
         for e in (self.prefix_entry, self.suffix_entry,
                   self.find_entry, self.replace_entry):
             e.delete(0, tk.END)
+            
+        self.prefix_entry._use_mtime = None
+        self.prefix_entry._date_var.set("none")
+        self.prefix_entry._date_active = False
+        
+        self.suffix_entry._use_mtime = None
+        self.suffix_entry._date_var.set("none")
+        self.suffix_entry._date_active = False
+        
+        self.del_left_var.set("0")
+        self.del_right_var.set("0")
+        
         self.custom_name_entry.config(state="normal")
         self.custom_name_entry.delete(0, tk.END)
         self.number_var.set(False)
@@ -741,15 +1032,21 @@ class BatchRenameApp:
         self.start_number.set("1")
         self.padding_number.set("3")
         self.number_position.set("End")
+        self.separator_var.set("_")
         self.toggle_number_options()
 
 
 if __name__ == "__main__":
     root = TkinterDnD.Tk() if DND_AVAILABLE else tk.Tk()
+    
+    # Hide window instantly before OS draws the white frame
+    root.attributes("-alpha", 0.0) 
+    
     try:
         base_path = getattr(sys, '_MEIPASS', os.path.dirname(os.path.abspath(__file__)))
         root.iconbitmap(os.path.join(base_path, "app.ico"))
     except Exception:
         pass
-    BatchRenameApp(root)
+        
+    app = BatchRenameApp(root)
     root.mainloop()
