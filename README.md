@@ -25,22 +25,11 @@ A lightweight, free, and portable batch renaming utility for files and folders.
 
 ---
 
-## Changelog v1.5
-
-### 🚀 New Features
-* **Dynamic Timestamp:** Auto-append file modification dates (e.g., `YYMMDD`) to prefixes or suffixes.
-* **Custom Separators:** Added flexible options (underscore, dot, or none) for filename formatting.
-
-### 🎨 UI Optimizations
-* **Refined Layout:** Optimized element padding, spacing, and component sizing for a more compact and organized interface.
-* **Icon-based UI:** Replaced text labels with intuitive, professional icons for a cleaner look.
-* **Drag & Drop:** Streamlined file import process.
-
----
-
 ## Features
 
 * **Batch Renaming** (Find & Replace)
 * **Sequential Numbering** (Start, Padding, Positioning)
+* **Dynamic Timestamp:** Auto-append file modification dates (e.g., `YYMMDD`) to prefixes or suffixes.
+* **Custom Separators:** Added flexible options (underscore, dot, or none) for filename formatting.
 * **Case Transformation** (UPPERCASE/lowercase)
 * **Real-time Preview** before renaming
