@@ -157,7 +157,7 @@ def draw_icon(canvas, kind, color, bg):
 class BatchRenameApp:
     def __init__(self, root):
         self.root = root
-        self.root.title("Simple Rename v1.7")
+        self.root.title("Simple Renamer v1.7")
 
         w, h = 470, 350
         sw, sh = root.winfo_screenwidth(), root.winfo_screenheight()
