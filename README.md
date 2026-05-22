@@ -1,11 +1,19 @@
 <img width="465" height="346" alt="image" src="https://github.com/user-attachments/assets/89b5a17d-bbf9-44c2-a1ad-cb3826accf61" />
 
-# Simple Rename v1.6 <img src="https://img.shields.io/badge/status-Latest-success" alt="Latest Release">
+# Simple Rename v1.7 <img src="https://img.shields.io/badge/status-Latest-success" alt="Latest Release">
 
-A free, portable batch file renaming tool featuring a neon-inspired dark UI.
+A free batch file renaming tool featuring a neon-inspired dark UI.
 
 > [!NOTE]
 > This is a **portable application**—no installation required. Simply run the executable to start renaming your files immediately.
+
+## Changelog v1.7
+*feat(ui): update to Simple Rename v1.7*
+
+* **Add "Rename to..." functionality
+* **Enable drag and drop support for folders
+* **Update UI and add icons for the File List
+* **Optimize performance and fix minor bugs
 
 ---
 
@@ -29,11 +37,6 @@ A free, portable batch file renaming tool featuring a neon-inspired dark UI.
 * **Refined Layout:** Optimized element padding, spacing, and component sizing for a more compact and organized interface.
 * **Icon-based UI:** Replaced text labels with intuitive, professional icons for a cleaner look.
 * **Drag & Drop:** Streamlined file import process.
-
-### 🐛 Bug Fixes & Stability
-* **State Management:** Fixed `reset_fields` to ensure all UI states clear correctly.
-* **UI Clean-up:** Resolved Combobox focus issues (removed unwanted text highlighting artifacts).
-* **Stability:** Optimized internal event handling for smoother performance.
 
 ---
 
