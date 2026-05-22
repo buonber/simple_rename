@@ -8,7 +8,6 @@ A lightweight, free, and portable batch renaming utility for files and folders.
 > This is a **portable application**—no installation required. Simply run the executable to start renaming your files immediately.
 
 ## Changelog v1.7
-*feat(ui): update to Simple Rename v1.7*
 
 * Add "Rename to..." functionality
 * Enable drag and drop support for folders
@@ -18,7 +17,6 @@ A lightweight, free, and portable batch renaming utility for files and folders.
 ---
 
 ## Changelog v1.6
-*feat: center window, smooth fade-in, fix uppercase ext, and add trim options*
 
 * **Add window centering logic** and a seamless 1s opacity fade-in animation on launch.
 * **Maintain lowercase/original file extensions** when applying UPPERCASE transformation.
