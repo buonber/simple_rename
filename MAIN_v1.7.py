@@ -333,7 +333,7 @@ class BatchRenameApp:
                           font=("Consolas", 8), cursor="hand2")
         gh_lbl.pack(side="left")
         for w in (gh, gh_ic, gh_lbl):
-            w.bind("<Button-1>", lambda e: webbrowser.open("https://github.com/buonber/simple_rename"))
+            w.bind("<Button-1>", lambda e: webbrowser.open("https://github.com/buonber/simple_renamer"))
             w.bind("<Enter>",    lambda e: gh_lbl.config(fg=NEON_CYAN))
             w.bind("<Leave>",    lambda e: gh_lbl.config(fg=NEON_BLUE))
 

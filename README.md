@@ -1,6 +1,7 @@
-<img width="466" height="342" alt="image" src="https://github.com/user-attachments/assets/4dfdc258-42a8-4c33-ae67-7d67499b696a" />
+<img width="468" height="345" alt="image" src="https://github.com/user-attachments/assets/29d3ba27-ca12-4502-a277-cd35c4ad9e02" />
 
-# Simple Renamer v1.7 <img src="https://img.shields.io/badge/status-Latest-success" alt="Latest Release">
+
+# Simple Renamer v1.7.2 <img src="https://img.shields.io/badge/status-Latest-success" alt="Latest Release">
 
 A lightweight, free, and portable batch renaming utility for files and folders.
 
