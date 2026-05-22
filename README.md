@@ -2,7 +2,7 @@
 
 # Simple Rename v1.7 <img src="https://img.shields.io/badge/status-Latest-success" alt="Latest Release">
 
-A free batch file renaming tool featuring a neon-inspired dark UI.
+A lightweight, free, and portable batch renaming utility for files and folders.
 
 > [!NOTE]
 > This is a **portable application**—no installation required. Simply run the executable to start renaming your files immediately.
