@@ -1,4 +1,5 @@
-<img width="465" height="346" alt="image" src="https://github.com/user-attachments/assets/89b5a17d-bbf9-44c2-a1ad-cb3826accf61" />
+<img width="466" height="342" alt="image" src="https://github.com/user-attachments/assets/4dfdc258-42a8-4c33-ae67-7d67499b696a" />
+
 
 # Simple Rename v1.7 <img src="https://img.shields.io/badge/status-Latest-success" alt="Latest Release">
 
