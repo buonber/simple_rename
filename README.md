@@ -10,10 +10,10 @@ A lightweight, free, and portable batch renaming utility for files and folders.
 ## Changelog v1.7
 *feat(ui): update to Simple Rename v1.7*
 
-* **Add "Rename to..." functionality
-* **Enable drag and drop support for folders
-* **Update UI and add icons for the File List
-* **Optimize performance and fix minor bugs
+* Add "Rename to..." functionality
+* Enable drag and drop support for folders
+* Update UI and add icons for the File List
+* Optimize performance and fix minor bugs
 
 ---
 
